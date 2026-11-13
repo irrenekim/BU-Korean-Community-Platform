@@ -52,7 +52,7 @@ Copy `.env.example` to a new file named `.env.local` and fill in the 2 Clerk key
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open https://bukorean.vercel.app
 
 ---
 
