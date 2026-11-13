@@ -1,31 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { categories } from "@/lib/categories";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-
-  // Keep track of who is logged in, and update when they log in/out.
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  async function handleLogout() {
-    await createClient().auth.signOut();
-    router.push("/");
-  }
 
   return (
     <nav className="border-b bg-white">
@@ -53,25 +34,23 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="ml-auto flex items-center gap-3 text-sm">
-          {user ? (
-            <>
-              <span className="hidden text-gray-500 sm:inline">{user.email}</span>
-              <button
-                onClick={handleLogout}
-                className="rounded border px-3 py-1 hover:bg-gray-100"
-              >
-                Log out
+        <div className="ml-auto flex items-center gap-2 text-sm">
+          {/* Shown when logged out */}
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="rounded border px-3 py-1 hover:bg-gray-100">Log in</button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700">
+                Sign up
               </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
-            >
-              Log in
-            </Link>
-          )}
+            </SignUpButton>
+          </Show>
+
+          {/* Shown when logged in: profile picture with Manage account / Sign out */}
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </div>
     </nav>

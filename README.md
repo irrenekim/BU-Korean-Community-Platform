@@ -3,36 +3,37 @@
 A community site for Korean students at Boston University: Academics, Sports, and Housing in one place.
 Built by the BU LIKELION team (소영, 희서, 우주, 원우).
 
-**Stack:** Next.js (App Router) · Tailwind CSS · Supabase (login + database) · Vercel (hosting)
+**Stack:** Next.js (App Router) · Tailwind CSS · Clerk (login) · Supabase (database) · Vercel (hosting)
 
 ---
 
 ## Week 1 status ✅
 
 - Homepage, navbar, and three category tabs (Academics / Sports / Housing)
-- @bu.edu-only sign-up and login with an emailed code (no passwords)
-- Log out, plus the navbar shows who is logged in
-- Database tables for posts, comments, and reports (with security rules)
+- Sign up / log in with Clerk (email + password, email verification), @bu.edu only
+- Database tables for posts, comments, and reports, with security rules that
+  only let BU students read/write and only let people edit their own posts
 
 ---
 
 ## First-time setup (one person, once)
 
-### 1. Create the Supabase project
-1. Go to [supabase.com](https://supabase.com) → **New project**.
-2. Open **SQL Editor → New query**, paste everything in `supabase/schema.sql`, and click **Run**.
-3. Open **Authentication → Email Templates → Magic Link** and replace the message body with:
-   ```html
-   <h2>Your Korean Community login code</h2>
-   <p>Enter this code to log in: <strong>{{ .Token }}</strong></p>
+### 1. Clerk (login)
+1. Create an application at [clerk.com](https://clerk.com). Turn on **Email** (and Password if you want).
+2. **Restrictions → Allowlist**: turn it on and add the domain `bu.edu`.
+   (Free in development mode, which is what we use for the MVP.)
+3. **Sessions → Customize session token**: add this and save:
+   ```json
+   { "email": "{{user.primary_email_address}}" }
    ```
-   Save. (Without this step, users get a link instead of a code.)
-4. Open **Project Settings → API** and copy the **Project URL** and the **anon / publishable key**.
+4. **Integrations → Supabase**: turn it on and copy the **Clerk domain** it shows.
+5. **API Keys**: copy the publishable key (`pk_test_...`) and secret key (`sk_test_...`).
 
-### 2. Before inviting testers (Week 4)
-Supabase's built-in email sender is only meant for testing and is heavily limited.
-Before real users sign up, connect a custom email sender (for example Resend) in
-**Authentication → SMTP Settings**. Check Supabase's docs for the current limits.
+### 2. Supabase (database)
+1. **Authentication → Sign In / Providers → Third-Party Auth → Add provider → Clerk**,
+   paste the Clerk domain, save.
+2. **SQL Editor → New query**: paste everything in `supabase/schema.sql` and **Run**.
+3. **Project Settings → API Keys**: copy the Project URL and the publishable key.
 
 ---
 
@@ -44,7 +45,7 @@ cd korean-community
 npm install
 ```
 
-Copy `.env.example` to a new file named `.env.local` and paste in the two Supabase values.
+Copy `.env.example` to a new file named `.env.local` and fill in the 2 Clerk keys and 2 Supabase values.
 **Never commit `.env.local`.** Share the keys privately (e.g. KakaoTalk DM).
 
 ```bash
@@ -64,15 +65,15 @@ app/
   academics/page.tsx  →  /academics
   sports/page.tsx     →  /sports
   housing/page.tsx    →  /housing
-  login/page.tsx      →  /login   (bu.edu email → code → logged in)
 components/
-  Navbar.tsx          Top bar: tabs + log in / log out
+  Navbar.tsx          Top bar: tabs + Clerk log in / sign up / profile button
   CategoryPage.tsx    Shared layout for the three tabs (posts go here in Week 2)
 lib/
   categories.ts       The three tabs, defined once
-  supabase/client.ts  createClient(): use this to talk to the database
+  supabase/client.ts  useSupabase(): use this to talk to the database
 supabase/
   schema.sql          Database tables + security rules
+proxy.ts              Lets Clerk check who is logged in on every page
 ```
 
 To add or rename a tab, edit `lib/categories.ts` and add a matching folder in `app/`.
@@ -89,4 +90,4 @@ To add or rename a tab, edit `lib/categories.ts` and add a matching folder in `a
 ## Deploying
 
 On [vercel.com](https://vercel.com): **Add New → Project** → import this repo →
-add the two `NEXT_PUBLIC_SUPABASE_...` environment variables → **Deploy**.
+add all 4 environment variables from `.env.local` → **Deploy**.

@@ -26,10 +26,8 @@ export default function HomePage() {
       </section>
 
       <p className="mt-10 text-center text-sm text-gray-500">
-        Only verified <strong>@bu.edu</strong> emails can join.{" "}
-        <Link href="/login" className="text-red-600 underline">
-          Log in or sign up
-        </Link>
+        Only verified <strong>@bu.edu</strong> emails can join. Use the <strong>Sign up</strong>{" "}
+        button at the top right.
       </p>
     </main>
   );
