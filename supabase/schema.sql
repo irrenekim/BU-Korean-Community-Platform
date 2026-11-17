@@ -1,16 +1,20 @@
--- Korean Community: database setup (Clerk login version)
--- Paste this whole file into Supabase → SQL Editor → New query → Run.
--- Safe to run more than once. It removes the old Supabase-login tables
--- (they're empty) and recreates them for Clerk.
+-- Korean Community: initial setup for a new Supabase database.
+-- For an existing database, apply a separate SQL migration.
+
+begin;
 
 ---------------------------------------------------------------
--- 0. Clean up the old version
+-- 0. Stop if the community tables already exist
 ---------------------------------------------------------------
-drop trigger if exists check_bu_email on auth.users;
-drop function if exists public.only_bu_emails();
-drop table if exists public.reports;
-drop table if exists public.comments;
-drop table if exists public.posts;
+do $$
+begin
+  if to_regclass('public.posts') is not null
+     or to_regclass('public.comments') is not null
+     or to_regclass('public.reports') is not null then
+    raise exception 'Community tables already exist. Apply a migration instead of running schema.sql.';
+  end if;
+end;
+$$;
 
 ---------------------------------------------------------------
 -- 1. Helpers that read the logged-in user's Clerk token
@@ -95,3 +99,5 @@ alter table public.reports enable row level security;
 create policy "BU students can submit reports"
   on public.reports for insert to authenticated
   with check (public.is_bu_student() and reporter_id = public.clerk_user_id());
+
+commit;
