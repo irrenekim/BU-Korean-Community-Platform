@@ -30,13 +30,13 @@ export default function CategoryPage({
         </button>
       </div>
 
-      {children}
-
       {/* Week 3: filters (course/major, sport type, neighborhood) go here */}
 
-      <div className="rounded-lg border border-dashed bg-white p-10 text-center text-gray-500">
-        No posts yet. Posts will appear here in Week 2.
-      </div>
+      {children ?? (
+        <div className="rounded-lg border border-dashed bg-white p-10 text-center text-gray-500">
+          No posts yet. Posts will appear here in Week 2.
+        </div>
+      )}
     </main>
   );
 }
