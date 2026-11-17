@@ -1,8 +1,15 @@
+import type { ReactNode } from "react";
 import { categories, type CategorySlug } from "@/lib/categories";
 
 // Shared layout for the Academics / Sports / Housing tabs.
 // Week 2: replace the placeholder box with the real post list from Supabase.
-export default function CategoryPage({ slug }: { slug: CategorySlug }) {
+export default function CategoryPage({
+  slug,
+  children,
+}: {
+  slug: CategorySlug;
+  children?: ReactNode;
+}) {
   const cat = categories.find((c) => c.slug === slug)!;
 
   return (
@@ -22,6 +29,8 @@ export default function CategoryPage({ slug }: { slug: CategorySlug }) {
           + New post
         </button>
       </div>
+
+      {children}
 
       {/* Week 3: filters (course/major, sport type, neighborhood) go here */}
 
