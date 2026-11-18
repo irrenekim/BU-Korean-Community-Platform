@@ -1,0 +1,31 @@
+.sports-calendar {
+  --fc-button-bg-color: #b91c1c;
+  --fc-button-border-color: #b91c1c;
+  --fc-button-hover-bg-color: #991b1b;
+  --fc-button-hover-border-color: #991b1b;
+  --fc-button-active-bg-color: #7f1d1d;
+  --fc-button-active-border-color: #7f1d1d;
+  --fc-today-bg-color: #fef2f2;
+}
+
+@media (max-width: 640px) {
+  .sports-calendar .fc-header-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sports-calendar .fc-toolbar-title {
+    font-size: 1.25rem;
+  }
+
+  .sports-calendar .fc-toolbar-chunk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .sports-calendar .fc-header-toolbar .fc-toolbar-chunk > :not(:first-child) {
+    margin-inline-start: 0;
+  }
+}
