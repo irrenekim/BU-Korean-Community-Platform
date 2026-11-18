@@ -1,5 +1,5 @@
 import { categories, type CategorySlug } from "@/lib/categories";
-
+import CategoryFilters from "./CategoryFilters"; 
 // Shared layout for the Academics / Sports / Housing tabs.
 // Week 2: replace the placeholder box with the real post list from Supabase.
 export default function CategoryPage({ slug }: { slug: CategorySlug }) {
@@ -23,11 +23,11 @@ export default function CategoryPage({ slug }: { slug: CategorySlug }) {
         </button>
       </div>
 
-      {/* Week 3: filters (course/major, sport type, neighborhood) go here */}
+   {/* Category-specific filters */} 
+    <CategoryFilters key={slug} slug={slug} /> 
+    </main> 
+    );
+  } 
 
-      <div className="rounded-lg border border-dashed bg-white p-10 text-center text-gray-500">
-        No posts yet. Posts will appear here in Week 2.
-      </div>
-    </main>
-  );
-}
+
+    
