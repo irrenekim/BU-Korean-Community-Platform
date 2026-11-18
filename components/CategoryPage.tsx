@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import CategoryPosts from "./CategoryPosts";
 import { categories, type CategorySlug } from "@/lib/categories";
 
+
 // Shared layout for the Academics / Sports / Housing tabs.
 // Week 2: replace the placeholder box with the real post list from Supabase.
 export default function CategoryPage({
@@ -20,7 +21,10 @@ export default function CategoryPage({
           <h1 className="text-3xl font-bold">
             {cat.emoji} {cat.label}
           </h1>
-          <p className="mt-1 text-gray-600">{cat.description}</p>
+
+          <p className="mt-1 text-gray-600">
+            {cat.description}
+          </p>
         </div>
       </div>
 
