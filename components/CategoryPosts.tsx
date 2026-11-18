@@ -4,6 +4,7 @@ import { SignInButton, useSession } from "@clerk/nextjs";
 import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
+import PostComments from "./PostComments";
 
 type Post = {
   id: number;
@@ -119,6 +120,7 @@ function SignedInPosts({ slug, userId, authorName }: {
                 <button type="button" onClick={() => { setEditor(post); setNotice(""); }}
                   className="rounded border px-3 py-1">Edit post</button>
               )}
+              <PostComments postId={post.id} userId={userId} authorName={authorName} />
             </article>
           ))}
           <div className="flex justify-between">
