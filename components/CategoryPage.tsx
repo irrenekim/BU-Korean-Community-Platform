@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import CategoryPosts from "./CategoryPosts";
 import { categories, type CategorySlug } from "@/lib/categories";
 
 // Shared layout for the Academics / Sports / Housing tabs.
@@ -21,22 +22,11 @@ export default function CategoryPage({
           </h1>
           <p className="mt-1 text-gray-600">{cat.description}</p>
         </div>
-        <button
-          disabled
-          title="Coming in Week 2"
-          className="rounded bg-red-600 px-4 py-2 text-white opacity-50"
-        >
-          + New post
-        </button>
       </div>
 
       {children}
 
-      {/* Week 3: filters (course/major, sport type, neighborhood) go here */}
-
-      <div className="rounded-lg border border-dashed bg-white p-10 text-center text-gray-500">
-        No posts yet. Posts will appear here in Week 2.
-      </div>
+      <CategoryPosts slug={slug} />
     </main>
   );
 }
