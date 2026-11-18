@@ -32,8 +32,16 @@ Built by the BU LIKELION team (소영, 희서, 우주, 원우).
 ### 2. Supabase (database)
 1. **Authentication → Sign In / Providers → Third-Party Auth → Add provider → Clerk**,
    paste the Clerk domain, save.
-2. **SQL Editor → New query**: paste everything in `supabase/schema.sql` and **Run**.
+2. For a new database, open **SQL Editor → New query**, paste `supabase/schema.sql`, and run it once. The script stops if any of the community tables already exist.
 3. **Project Settings → API Keys**: copy the Project URL and the publishable key.
+
+### Updating an existing database
+
+1. Save the SQL for the change in a new file under `supabase/migrations/` named `YYYYMMDDHHMMSS_description.sql`. Use targeted statements such as `ALTER TABLE` to add a column or `ALTER POLICY` to update permissions.
+2. Apply the migration to a test database with the existing schema. Verify that existing data is still present and the change works.
+3. After review, apply only the new migration in the team's Supabase SQL Editor. Record which migrations have been applied so they can be run once and in order.
+
+For a new database, run `schema.sql` first, then apply migrations in filename order.
 
 ---
 
@@ -72,7 +80,8 @@ lib/
   categories.ts       The three tabs, defined once
   supabase/client.ts  useSupabase(): use this to talk to the database
 supabase/
-  schema.sql          Database tables + security rules
+  schema.sql          Initial tables and security rules for a new database
+  migrations/         Incremental SQL changes (added as needed)
 proxy.ts              Lets Clerk check who is logged in on every page
 ```
 
