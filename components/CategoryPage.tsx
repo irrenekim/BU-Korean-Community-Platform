@@ -1,8 +1,10 @@
-
 import type { ReactNode } from "react";
+import CategoryPosts from "./CategoryPosts";
 import { categories, type CategorySlug } from "@/lib/categories";
-import CategoryFilters from "./CategoryFilters";
 
+
+// Shared layout for the Academics / Sports / Housing tabs.
+// Week 2: replace the placeholder box with the real post list from Supabase.
 export default function CategoryPage({
   slug,
   children,
@@ -24,21 +26,11 @@ export default function CategoryPage({
             {cat.description}
           </p>
         </div>
-
-        <button
-          disabled
-          title="Coming in Week 2"
-          className="rounded bg-red-600 px-4 py-2 text-white opacity-50"
-        >
-          + New post
-        </button>
       </div>
 
-      {/* Preserve other team members' components */}
       {children}
 
-      {/* Category-specific filters */}
-      <CategoryFilters key={slug} slug={slug} />
+      <CategoryPosts slug={slug} />
     </main>
   );
 }
