@@ -1,8 +1,15 @@
+
+import type { ReactNode } from "react";
 import { categories, type CategorySlug } from "@/lib/categories";
-import CategoryFilters from "./CategoryFilters"; 
-// Shared layout for the Academics / Sports / Housing tabs.
-// Week 2: replace the placeholder box with the real post list from Supabase.
-export default function CategoryPage({ slug }: { slug: CategorySlug }) {
+import CategoryFilters from "./CategoryFilters";
+
+export default function CategoryPage({
+  slug,
+  children,
+}: {
+  slug: CategorySlug;
+  children?: ReactNode;
+}) {
   const cat = categories.find((c) => c.slug === slug)!;
 
   return (
@@ -12,8 +19,12 @@ export default function CategoryPage({ slug }: { slug: CategorySlug }) {
           <h1 className="text-3xl font-bold">
             {cat.emoji} {cat.label}
           </h1>
-          <p className="mt-1 text-gray-600">{cat.description}</p>
+
+          <p className="mt-1 text-gray-600">
+            {cat.description}
+          </p>
         </div>
+
         <button
           disabled
           title="Coming in Week 2"
@@ -23,11 +34,11 @@ export default function CategoryPage({ slug }: { slug: CategorySlug }) {
         </button>
       </div>
 
-   {/* Category-specific filters */} 
-    <CategoryFilters key={slug} slug={slug} /> 
-    </main> 
-    );
-  } 
+      {/* Preserve other team members' components */}
+      {children}
 
-
-    
+      {/* Category-specific filters */}
+      <CategoryFilters key={slug} slug={slug} />
+    </main>
+  );
+}
