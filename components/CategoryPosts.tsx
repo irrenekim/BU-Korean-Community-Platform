@@ -5,6 +5,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
 import CategoryFilters from "./CategoryFilters";
+import PostComments from "./PostComments";
+
 type Post = {
   id: number;
   author_id: string;
@@ -145,6 +147,7 @@ const { data, count, error } = await query
                 <button type="button" onClick={() => { setEditor(post); setNotice(""); }}
                   className="rounded border px-3 py-1">Edit post</button>
               )}
+              <PostComments postId={post.id} userId={userId} authorName={authorName} />
             </article>
           ))}
           <div className="flex justify-between">
