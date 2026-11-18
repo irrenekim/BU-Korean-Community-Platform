@@ -4,7 +4,7 @@ import { SignInButton, useSession } from "@clerk/nextjs";
 import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
-
+import CategoryFilters from "./CategoryFilters";
 type Post = {
   id: number;
   author_id: string;
@@ -40,6 +40,7 @@ function SignedInPosts({ slug, userId, authorName }: {
   const supabase = useSupabase();
   const [posts, setPosts] = useState<Post[]>([]);
   const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState("");
   const [total, setTotal] = useState(0);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -52,11 +53,26 @@ function SignedInPosts({ slug, userId, authorName }: {
     const abort = new AbortController();
     async function load() {
       try {
-        const { data, count, error } = await supabase.from("posts")
-          .select("id,author_id,author_name,title,body,tag,created_at", { count: "exact" })
-          .eq("category", slug).order("created_at", { ascending: false })
-          .order("id", { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1).abortSignal(abort.signal);
+        
+let query = supabase
+  .from("posts")
+  .select(
+    "id,author_id,author_name,title,body,tag,created_at",
+    { count: "exact" }
+  )
+  .eq("category", slug);
+
+if (filter) {
+  const escaped = filter.replace(/[\\%_]/g, "\\$&");
+  query = query.ilike("tag", `%${escaped}%`);
+}
+
+const { data, count, error } = await query
+  .order("created_at", { ascending: false })
+  .order("id", { ascending: false })
+  .range(page * pageSize, (page + 1) * pageSize - 1)
+  .abortSignal(abort.signal);
+
         if (error) throw error;
         if (abort.signal.aborted) return;
         setPosts(data);
@@ -70,7 +86,7 @@ function SignedInPosts({ slug, userId, authorName }: {
     }
     void load();
     return () => abort.abort();
-  }, [supabase, slug, page, revision]);
+  }, [supabase, slug, page, revision, filter]);
 
   function refresh() {
     setLoading(true);
@@ -84,6 +100,16 @@ function SignedInPosts({ slug, userId, authorName }: {
 
   return (
     <section className="mt-6 space-y-4" aria-labelledby="category-posts-heading">
+     <CategoryFilters
+  slug={slug}
+  value={filter}
+  onChange={(next) => {
+    if (next === filter) return;
+    setLoading(true);
+    setPage(0);
+    setFilter(next);
+  }}
+/> 
       <div className="flex items-center justify-between gap-3">
         <h2 id="category-posts-heading" className="text-xl font-semibold">Posts</h2>
         <button type="button" onClick={() => { setEditor("new"); setNotice(""); }}
