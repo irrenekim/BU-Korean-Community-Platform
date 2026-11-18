@@ -1,10 +1,10 @@
 import CategoryPage from "@/components/CategoryPage";
-import SportsCalendar from "./SportsCalendar";
+import SportsEvents from "./SportsEvents";
 
 export default function SportsPage() {
   return (
     <CategoryPage slug="sports">
-      <SportsCalendar />
+      <SportsEvents />
     </CategoryPage>
   );
 }

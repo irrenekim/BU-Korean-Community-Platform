@@ -1,11 +1,12 @@
 "use client";
 
 import FullCalendar from "@fullcalendar/react";
+import type { EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import "./sports-calendar.css";
 
-export default function SportsCalendar() {
+export default function SportsCalendar({ events }: { events?: EventInput[] }) {
   return (
     <section
       aria-labelledby="sports-calendar-heading"
@@ -24,6 +25,7 @@ export default function SportsCalendar() {
             end: "prev,next today dayGridMonth,timeGridWeek",
           }}
           height="auto"
+          events={events}
         />
       </div>
     </section>
