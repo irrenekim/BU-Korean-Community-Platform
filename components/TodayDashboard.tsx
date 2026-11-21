@@ -137,7 +137,10 @@ export default function TodayDashboard({ firstName, userId }: { firstName: strin
         <div className="hidden xl:block"><UpNext next={next} loading={!upcoming} /></div>
 
         <section className="card p-5">
-          <h2 className="section-title">Your schedule</h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="section-title">Your schedule</h2>
+            <Link href="/plans" className="text-sm font-medium text-brand hover:underline">Plans</Link>
+          </div>
           {!upcoming ? <p className="muted mt-3">Loading…</p> : upcoming.length === 0 ? (
             <p className="muted mt-2">Games you RSVP to show up here with a countdown.</p>
           ) : (
