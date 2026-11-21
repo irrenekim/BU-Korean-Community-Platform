@@ -4,7 +4,7 @@ import { SignInButton, useSession } from "@clerk/nextjs";
 import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
-import CategoryFilters from "./CategoryFilters";
+import CategoryFilters, { FILTERS } from "./CategoryFilters";
 import PostComments from "./PostComments";
 
 type Post = {
@@ -64,7 +64,16 @@ let query = supabase
   )
   .eq("category", slug);
 
-if (filter) {
+const listed = FILTERS[slug].allOptions ?? FILTERS[slug].options;
+if (filter === "Other" && slug !== "academics") {
+  // "Other" = any tag that isn't one of the listed choices
+  const known = listed.filter((option) => option !== "Other")
+    .map((option) => `"${option}"`).join(",");
+  query = query.not("tag", "is", null).not("tag", "in", `(${known})`);
+} else if (filter && slug !== "academics" && listed.includes(filter)) {
+  // A listed sport / neighborhood: exact match ("Tennis" ≠ "Table Tennis")
+  query = query.eq("tag", filter);
+} else if (filter) {
   const escaped = filter.replace(/[\\%_]/g, "\\$&");
   query = query.ilike("tag", `%${escaped}%`);
 }
@@ -135,7 +144,7 @@ const { data, count, error } = await query
           {posts.length === 0 && <p>No posts on this page yet.</p>}
           {posts.map((post) => (
             <article key={post.id} className="space-y-3 rounded-lg border bg-white p-5">
-              {post.tag && <p className="text-sm text-red-700">{post.tag}</p>}
+              {post.tag && <p className="text-sm text-red-700">{tagIcon[slug]} {post.tag}</p>}
               <h3 className="break-words text-lg font-semibold">{post.title}</h3>
               <p className="break-words whitespace-pre-wrap">{post.body}</p>
               <p className="text-sm text-gray-500">
@@ -210,9 +219,13 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
         <label className="block">Title
           <input name="title" required maxLength={200} defaultValue={post?.title} className={inputClass} />
         </label>
-        <label className="block">{tagLabel} (optional)
-          <input name="tag" maxLength={100} defaultValue={post?.tag ?? ""} className={inputClass} />
-        </label>
+        {slug === "academics" ? (
+          <label className="block">{tagLabel} (optional)
+            <input name="tag" maxLength={100} defaultValue={post?.tag ?? ""} className={inputClass} />
+          </label>
+        ) : (
+          <TagPicker slug={slug} label={tagLabel} initial={post?.tag ?? ""} inputClass={inputClass} />
+        )}
         <label className="block">Body
           <textarea name="body" required rows={6} maxLength={20000} defaultValue={post?.body} className={inputClass} />
         </label>
@@ -225,5 +238,42 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
       </fieldset>
       {error && <p role="alert" className="mt-3 text-red-700">{error}</p>}
     </form>
+  );
+}
+
+const tagIcon: Record<CategorySlug, string> = { academics: "📚", sports: "🏅", housing: "📍" };
+
+// Sports and Housing: pick the sport / neighborhood from a fixed list, so the
+// filter buttons find the post. "Other" opens a box to type a new one.
+function TagPicker({ slug, label, initial, inputClass }: {
+  slug: "sports" | "housing";
+  label: string;
+  initial: string;
+  inputClass: string;
+}) {
+  const options: readonly string[] = FILTERS[slug].allOptions ?? FILTERS[slug].options;
+  const startsListed = initial === "" || options.includes(initial);
+  const [choice, setChoice] = useState(startsListed ? initial : "Other");
+  const [custom, setCustom] = useState(startsListed ? "" : initial);
+  const value = choice === "Other" ? custom.trim() || "Other" : choice;
+
+  return (
+    <div className="space-y-2">
+      <label className="block">{label}
+        <select required value={choice} onChange={(event) => setChoice(event.target.value)}
+          className={inputClass}>
+          <option value="" disabled>Choose {slug === "sports" ? "a sport" : "a neighborhood"}</option>
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+      </label>
+      {choice === "Other" && (
+        <label className="block text-sm">
+          {slug === "sports" ? "Which sport?" : "Which neighborhood?"} (optional)
+          <input value={custom} maxLength={100} onChange={(event) => setCustom(event.target.value)}
+            placeholder={slug === "sports" ? "e.g. Table tennis" : "e.g. Somerville"} className={inputClass} />
+        </label>
+      )}
+      <input type="hidden" name="tag" value={value} />
+    </div>
   );
 }

@@ -4,7 +4,30 @@
 import { useState } from "react";
 import type { CategorySlug } from "@/lib/categories";
 
-const FILTERS = {
+// Every sport people can pick when writing a Sports post (A–Z).
+// To add one, add it here. "Other" is added automatically.
+export const ALL_SPORTS = [
+  "American Football", "Archery", "Badminton", "Baseball", "Basketball",
+  "Billiards", "Bowling", "Boxing", "Cheerleading", "Climbing / Bouldering",
+  "Cricket", "Cycling", "Dance", "Dodgeball", "Esports", "Fencing",
+  "Field Hockey", "Figure Skating", "Flag Football", "Frisbee / Ultimate",
+  "Futsal", "Golf", "Gym / Weightlifting", "Gymnastics", "Hiking",
+  "Ice Hockey", "Ice Skating", "Jiu-Jitsu", "Judo", "Kayaking",
+  "Kickboxing", "Lacrosse", "Pickleball", "Pilates", "Rowing", "Rugby",
+  "Running", "Sailing", "Skiing", "Snowboarding", "Soccer", "Softball",
+  "Squash", "Surfing", "Swimming", "Table Tennis", "Taekwondo", "Tennis",
+  "Track & Field", "Volleyball", "Water Polo", "Wrestling", "Yoga",
+];
+
+type FilterConfig = {
+  label: string;
+  options: string[];      // quick filter buttons ("Other" last)
+  allOptions?: string[];  // full list for the dropdowns, if longer than the buttons
+};
+
+// Shared with the post form (CategoryPosts.tsx), so the dropdown
+// people pick from always matches these filter buttons.
+export const FILTERS: Record<CategorySlug, FilterConfig> = {
   academics: {
     label: "Course / Major",
     options: [
@@ -18,22 +41,30 @@ const FILTERS = {
   },
   sports: {
     label: "Sport Type",
+    // The 6 most popular sports get quick buttons
     options: [
       "Soccer",
       "Basketball",
-      "Tennis",
       "Volleyball",
+      "Tennis",
       "Badminton",
+      "Running",
+      "Other",
     ],
+    allOptions: [...ALL_SPORTS, "Other"],
   },
   housing: {
     label: "Neighborhood",
     options: [
       "Allston",
+      "Brighton",
       "Fenway",
       "Brookline",
-      "Brighton",
+      "Back Bay",
+      "South End",
+      "Cambridge",
       "South Campus",
+      "Other",
     ],
   },
 };
@@ -105,6 +136,22 @@ export default function CategoryFilters({
           </button>
         </div>
       </form>
+
+      {config.allOptions && (
+        <label className="block text-sm font-medium">
+          More {config.label.toLowerCase()}s
+          <select
+            value={config.allOptions.includes(value) ? value : ""}
+            onChange={(event) => applyFilter(event.target.value)}
+            className="mt-1 block w-full rounded border px-3 py-2 font-normal sm:w-64"
+          >
+            <option value="">All</option>
+            {config.allOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {["", ...config.options].map((option) => (
