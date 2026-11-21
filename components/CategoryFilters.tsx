@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import type { CategorySlug } from "@/lib/categories";
+import { COLLEGES, SEP, majorsOf } from "@/lib/academics";
 
 // Every sport people can pick when writing a Sports post (A–Z).
 // To add one, add it here. "Other" is added automatically.
@@ -17,6 +18,17 @@ export const ALL_SPORTS = [
   "Running", "Sailing", "Skiing", "Snowboarding", "Soccer", "Softball",
   "Squash", "Surfing", "Swimming", "Table Tennis", "Taekwondo", "Tennis",
   "Track & Field", "Volleyball", "Water Polo", "Wrestling", "Yoga",
+];
+
+// Every neighborhood people can pick when writing a Housing post (A–Z).
+export const ALL_NEIGHBORHOODS = [
+  "Allston", "Back Bay", "Beacon Hill", "Brighton", "Brookline",
+  "Brookline: Coolidge Corner", "Brookline: Brookline Village", "BU Central Campus",
+  "BU East Campus", "BU Fenway Campus", "BU South Campus", "BU West Campus",
+  "Cambridge", "Charlestown", "Chinatown", "Dorchester", "Downtown", "East Boston",
+  "Fenway", "Jamaica Plain", "Kenmore", "Malden", "Medford", "Mission Hill",
+  "Newton", "North End", "Quincy", "Roxbury", "Seaport", "Somerville",
+  "South Boston", "South End", "Watertown", "West End",
 ];
 
 type FilterConfig = {
@@ -55,17 +67,9 @@ export const FILTERS: Record<CategorySlug, FilterConfig> = {
   },
   housing: {
     label: "Neighborhood",
-    options: [
-      "Allston",
-      "Brighton",
-      "Fenway",
-      "Brookline",
-      "Back Bay",
-      "South End",
-      "Cambridge",
-      "South Campus",
-      "Other",
-    ],
+    // The 6 most popular areas get quick buttons
+    options: ["Allston", "Brighton", "Fenway", "Brookline", "Back Bay", "Cambridge", "Other"],
+    allOptions: [...ALL_NEIGHBORHOODS, "Other"],
   },
 };
 
@@ -137,6 +141,8 @@ export default function CategoryFilters({
         </div>
       </form>
 
+      {slug === "academics" && <AcademicFilters value={value} onPick={applyFilter} />}
+
       {config.allOptions && (
         <label className="block text-sm font-medium">
           More {config.label.toLowerCase()}s
@@ -153,7 +159,7 @@ export default function CategoryFilters({
         </label>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      {slug !== "academics" && <div className="flex flex-wrap gap-2">
         {["", ...config.options].map((option) => (
           <button
             key={option}
@@ -169,7 +175,42 @@ export default function CategoryFilters({
             {option || "All"}
           </button>
         ))}
+      </div>}
+    </div>
+  );
+}
+
+// Academics: pick a college (CAS, Questrom, …), then optionally one of its majors.
+// The filter value is "CAS" for a whole college or "CAS · Economics" for one major.
+function AcademicFilters({ value, onPick }: { value: string; onPick: (value: string) => void }) {
+  const [college, major] = value.split(SEP);
+  const selected = COLLEGES.some((c) => c.code === college) ? college : "";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by college">
+        {["", ...COLLEGES.map((c) => c.code)].map((code) => (
+          <button key={code} type="button" aria-pressed={selected === code}
+            title={COLLEGES.find((c) => c.code === code)?.name}
+            onClick={() => onPick(code)}
+            className={`rounded-full border px-3 py-1 text-sm ${
+              selected === code ? "bg-red-700 text-white" : "bg-gray-50 text-gray-700"
+            }`}>
+            {code || "All"}
+          </button>
+        ))}
       </div>
+      {selected && (
+        <label className="block text-sm font-medium">
+          Major in {COLLEGES.find((c) => c.code === selected)?.name}
+          <select value={major ?? ""}
+            onChange={(event) => onPick(event.target.value ? selected + SEP + event.target.value : selected)}
+            className="mt-1 block w-full rounded border px-3 py-2 font-normal sm:w-96">
+            <option value="">All majors</option>
+            {majorsOf(selected).map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </label>
+      )}
     </div>
   );
 }

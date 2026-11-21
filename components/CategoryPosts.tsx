@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
 import CategoryFilters, { FILTERS } from "./CategoryFilters";
+import { COLLEGES, SEP, majorsOf, parseAcademicTag } from "@/lib/academics";
 import PostComments from "./PostComments";
 
 type Post = {
@@ -65,7 +66,16 @@ let query = supabase
   .eq("category", slug);
 
 const listed = FILTERS[slug].allOptions ?? FILTERS[slug].options;
-if (filter === "Other" && slug !== "academics") {
+const [college, major, extra] = filter.split(SEP);
+const isCollege = slug === "academics" && COLLEGES.some((c) => c.code === college);
+if (isCollege && !major && !extra) {
+  // Whole college, e.g. "CAS" → every "CAS · …" post
+  query = query.like("tag", `${college}${SEP}%`);
+} else if (isCollege && major && !extra) {
+  // One major, with or without a course: "CAS · Economics" or "CAS · Economics · EC 101"
+  const exact = `${college}${SEP}${major}`;
+  query = query.or(`tag.eq."${exact}",tag.like."${exact}${SEP}*"`);
+} else if (filter === "Other" && slug !== "academics") {
   // "Other" = any tag that isn't one of the listed choices
   const known = listed.filter((option) => option !== "Other")
     .map((option) => `"${option}"`).join(",");
@@ -220,9 +230,7 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
           <input name="title" required maxLength={200} defaultValue={post?.title} className={inputClass} />
         </label>
         {slug === "academics" ? (
-          <label className="block">{tagLabel} (optional)
-            <input name="tag" maxLength={100} defaultValue={post?.tag ?? ""} className={inputClass} />
-          </label>
+          <AcademicPicker initial={post?.tag ?? ""} inputClass={inputClass} />
         ) : (
           <TagPicker slug={slug} label={tagLabel} initial={post?.tag ?? ""} inputClass={inputClass} />
         )}
@@ -273,6 +281,43 @@ function TagPicker({ slug, label, initial, inputClass }: {
             placeholder={slug === "sports" ? "e.g. Table tennis" : "e.g. Somerville"} className={inputClass} />
         </label>
       )}
+      <input type="hidden" name="tag" value={value} />
+    </div>
+  );
+}
+
+// Academics: college → major → optional course, saved as "CAS · Economics · EC 101".
+function AcademicPicker({ initial, inputClass }: { initial: string; inputClass: string }) {
+  const parsed = parseAcademicTag(initial);
+  const [college, setCollege] = useState(parsed.college);
+  const [major, setMajor] = useState(parsed.major);
+  const [course, setCourse] = useState(parsed.course);
+  // Older posts with a free-typed tag keep it unless the author picks a college
+  const value = college
+    ? [college, major, course.trim()].filter(Boolean).join(SEP)
+    : parsed.college ? "" : initial;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <label className="block">College
+        <select required value={college}
+          onChange={(event) => { setCollege(event.target.value); setMajor(""); }}
+          className={inputClass}>
+          <option value="" disabled>Choose a college</option>
+          {COLLEGES.map((c) => <option key={c.code} value={c.code}>{c.code}: {c.name}</option>)}
+        </select>
+      </label>
+      <label className="block">Major
+        <select required value={major} disabled={!college}
+          onChange={(event) => setMajor(event.target.value)} className={inputClass}>
+          <option value="" disabled>Choose a major</option>
+          {majorsOf(college).map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </label>
+      <label className="block">Course (optional)
+        <input value={course} maxLength={20} placeholder="e.g. EC 101"
+          onChange={(event) => setCourse(event.target.value.replaceAll("·", ""))} className={inputClass} />
+      </label>
       <input type="hidden" name="tag" value={value} />
     </div>
   );
