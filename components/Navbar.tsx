@@ -14,6 +14,7 @@ const links: { href: string; label: string; icon: IconName }[] = [
   { href: "/academics", label: "Academics", icon: "academics" },
   { href: "/sports", label: "Sports", icon: "sports" },
   { href: "/housing", label: "Housing", icon: "housing" },
+  { href: "/plans", label: "Plans", icon: "calendar" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -86,7 +87,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Bottom tabs (phones and tablets) */}
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {[...links, { href: "/settings", label: "Me", icon: "settings" as const }].map((link) => {
           const active = isActive(pathname, link.href);
           return (
