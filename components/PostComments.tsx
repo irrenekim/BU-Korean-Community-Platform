@@ -2,6 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
+import Avatar from "./Avatar";
+import Icon from "./icons";
+import { timeAgo } from "@/lib/format";
 
 type Comment = {
   id: number;
@@ -90,10 +93,12 @@ export default function PostComments({ postId, userId, authorName }: {
   }
 
   return (
-    <div className="border-t pt-3">
+    <div className="mt-2">
       <button type="button" aria-expanded={open} aria-controls={`comments-${postId}`}
-        className="rounded border px-3 py-1" onClick={() => setOpen(!open)}>
-        {open ? "Hide comments" : "Comments"}
+        className="-ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-ink"
+        onClick={() => setOpen(!open)}>
+        <Icon name="comment" className="h-[18px] w-[18px]" />
+        {open ? "Hide comments" : total ? `${total} ${total === 1 ? "comment" : "comments"}` : "Comment"}
       </button>
       {open && (
         <section id={`comments-${postId}`} aria-label="Comments" className="mt-4 space-y-4">
@@ -106,19 +111,23 @@ export default function PostComments({ postId, userId, authorName }: {
               {comments.length === 0 && <p className="text-sm text-gray-500">No comments yet.</p>}
               <ul className="space-y-3">
                 {comments.map((comment) => (
-                  <li key={comment.id} className="rounded bg-gray-50 p-3">
-                    <p className="break-words whitespace-pre-wrap">{comment.body}</p>
-                    <p className="mt-2 text-xs text-gray-500">
-                      {comment.author_name || "BU student"} · <time dateTime={comment.created_at}>
-                        {new Date(comment.created_at).toLocaleString()}
-                      </time>
-                    </p>
-                    {comment.author_id === userId && (
-                      <button type="button" disabled={busy} onClick={() => void remove(comment.id)}
-                        className="mt-2 text-sm text-red-700 underline disabled:opacity-40">
-                        Delete comment
-                      </button>
-                    )}
+                  <li key={comment.id} className="flex gap-3">
+                    <Avatar name={comment.author_name} size="sm" />
+                    <div className="min-w-0 flex-1 rounded-xl bg-gray-50 px-3 py-2">
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-800">{comment.author_name || "BU student"}</span> ·{" "}
+                        <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleString()}>
+                          {timeAgo(comment.created_at)}
+                        </time>
+                        {comment.author_id === userId && (
+                          <button type="button" disabled={busy} onClick={() => void remove(comment.id)}
+                            className="ml-2 text-brand hover:underline disabled:opacity-40">
+                            Delete
+                          </button>
+                        )}
+                      </p>
+                      <p className="mt-0.5 break-words whitespace-pre-wrap text-sm">{comment.body}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -130,15 +139,15 @@ export default function PostComments({ postId, userId, authorName }: {
             </>
           )}
           <form onSubmit={submit}>
-            <label htmlFor={`comment-draft-${postId}`} className="block text-sm font-medium">Add a comment</label>
-            <textarea id={`comment-draft-${postId}`} required maxLength={5000} rows={3}
+            <label htmlFor={`comment-draft-${postId}`} className="sr-only">Add a comment</label>
+            <textarea id={`comment-draft-${postId}`} required maxLength={5000}
               value={draft} disabled={busy} onChange={(event) => setDraft(event.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2" />
-            <button type="submit" disabled={busy} className="mt-2 rounded bg-red-700 px-3 py-2 text-sm text-white disabled:opacity-40">
+              rows={2} placeholder="Write a comment…" className="input" />
+            <button type="submit" disabled={busy} className="btn-primary mt-2">
               {busy ? "Saving…" : "Post comment"}
             </button>
           </form>
-          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          {error && <p role="alert" className="text-sm text-brand">{error}</p>}
         </section>
       )}
     </div>

@@ -4,9 +4,12 @@ import { SignInButton, useSession } from "@clerk/nextjs";
 import { useEffect, useState, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
-import CategoryFilters, { FILTERS } from "./CategoryFilters";
+import CategoryFilters, { FILTERS, QuickChips } from "./CategoryFilters";
+import Icon from "./icons";
 import { COLLEGES, SEP, majorsOf, parseAcademicTag } from "@/lib/academics";
 import PostComments from "./PostComments";
+import Avatar from "./Avatar";
+import { timeAgo } from "@/lib/format";
 
 type Post = {
   id: number;
@@ -21,14 +24,18 @@ type Post = {
 export default function CategoryPosts({ slug }: { slug: CategorySlug }) {
   const { isLoaded, session } = useSession();
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return <p role="status">Posts are unavailable while the database is being configured.</p>;
+    return <p role="status" className="muted">Posts are unavailable while the database is being configured.</p>;
   }
-  if (!isLoaded) return <p role="status">Loading…</p>;
+  if (!isLoaded) return <p role="status" className="muted">Loading…</p>;
   if (!session) {
     return (
-      <SignInButton mode="modal">
-        <button className="rounded border bg-white px-4 py-2">Log in to view and create posts</button>
-      </SignInButton>
+      <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">
+        <p className="font-semibold">Posts are for BU students</p>
+        <p className="muted">Log in with your @bu.edu email to read and write posts.</p>
+        <SignInButton mode="modal">
+          <button className="btn-primary">Log in</button>
+        </SignInButton>
+      </div>
     );
   }
   return <SignedInPosts key={session.id + slug} slug={slug} userId={session.user.id}
@@ -119,66 +126,127 @@ const { data, count, error } = await query
     setPage(next);
   }
 
-  return (
-    <section className="mt-6 space-y-4" aria-labelledby="category-posts-heading">
-     <CategoryFilters
-  slug={slug}
-  value={filter}
-  onChange={(next) => {
+  function pickFilter(next: string) {
     if (next === filter) return;
     setLoading(true);
     setPage(0);
     setFilter(next);
-  }}
-/> 
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="category-posts-heading" className="text-xl font-semibold">Posts</h2>
-        <button type="button" onClick={() => { setEditor("new"); setNotice(""); }}
-          className="rounded bg-red-700 px-4 py-2 text-white">+ New post</button>
-      </div>
-      {editor && (
-        <PostEditor key={editor === "new" ? "new" : editor.id} slug={slug} userId={userId}
-          authorName={authorName} post={editor === "new" ? null : editor}
-          onCancel={() => setEditor(null)} onSaved={() => {
-            setNotice(editor === "new" ? "Post published." : "Changes saved.");
-            setEditor(null);
-            setPage(0);
-            refresh();
-          }} />
-      )}
-      {notice && <p role="status">{notice}</p>}
-      {loading ? <p role="status">Loading posts…</p> : loadError ? (
-        <p role="alert">{loadError} <button onClick={refresh} className="underline">Retry</button></p>
-      ) : (
-        <>
-          {posts.length === 0 && <p>No posts on this page yet.</p>}
-          {posts.map((post) => (
-            <article key={post.id} className="space-y-3 rounded-lg border bg-white p-5">
-              {post.tag && <p className="text-sm text-red-700">{tagIcon[slug]} {post.tag}</p>}
-              <h3 className="break-words text-lg font-semibold">{post.title}</h3>
-              <p className="break-words whitespace-pre-wrap">{post.body}</p>
-              <p className="text-sm text-gray-500">
-                {post.author_name || "BU student"} · <time dateTime={post.created_at}>
-                  {new Date(post.created_at).toLocaleString()}
-                </time>
-              </p>
-              {post.author_id === userId && (
-                <button type="button" onClick={() => { setEditor(post); setNotice(""); }}
-                  className="rounded border px-3 py-1">Edit post</button>
-              )}
-              <PostComments postId={post.id} userId={userId} authorName={authorName} />
-            </article>
-          ))}
-          <div className="flex justify-between">
-            <button type="button" disabled={page === 0} onClick={() => changePage(page - 1)}
-              className="rounded border px-3 py-2 disabled:opacity-40">Previous</button>
-            <button type="button" disabled={(page + 1) * pageSize >= total}
-              onClick={() => changePage(page + 1)}
-              className="rounded border px-3 py-2 disabled:opacity-40">Next</button>
-          </div>
-        </>
-      )}
+  }
+  const label = { academics: "Academics", sports: "Sports", housing: "Housing" }[slug];
+
+  const filterPanel = (
+    <section className="card space-y-4 p-5" aria-label="More filters">
+      <h2 className="section-title">Narrow it down</h2>
+      <CategoryFilters slug={slug} value={filter} onChange={pickFilter} />
     </section>
+  );
+
+  return (
+    <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="min-w-0 space-y-4">
+        <QuickChips slug={slug} value={filter} onChange={pickFilter} />
+
+        {/* Phones/tablets: the detailed filters fold into a disclosure */}
+        <details className="card p-0 xl:hidden [&[open]]:p-5">
+          <summary className="cursor-pointer list-none px-5 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            More filters{filter && <span className="font-normal text-gray-500">: {filter}</span>}
+          </summary>
+          <div className="mt-2"><CategoryFilters slug={slug} value={filter} onChange={pickFilter} /></div>
+        </details>
+        {filter && <div className="xl:hidden"><FollowButton category={slug} filter={filter} /></div>}
+
+        {/* Composer */}
+        {editor ? (
+          <PostEditor key={editor === "new" ? "new" : editor.id} slug={slug} userId={userId}
+            authorName={authorName} post={editor === "new" ? null : editor}
+            onCancel={() => setEditor(null)} onSaved={() => {
+              setNotice(editor === "new" ? "Post published." : "Changes saved.");
+              setEditor(null);
+              setPage(0);
+              refresh();
+            }} />
+        ) : (
+          <button type="button" onClick={() => { setEditor("new"); setNotice(""); }}
+            className="card flex w-full items-center gap-3 p-3 pr-4 text-left transition hover:ring-gray-300">
+            <Avatar name={authorName} />
+            <span className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-500">
+              Share something with {label}…
+            </span>
+            <span className="hidden items-center gap-1 text-sm font-semibold text-brand sm:flex">
+              <Icon name="write" className="h-4 w-4" /> Post
+            </span>
+          </button>
+        )}
+        {notice && <p role="status" className="rounded-2xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-800">{notice}</p>}
+
+        {/* Feed */}
+        <section aria-labelledby="category-posts-heading">
+          <div className="mb-2 flex items-baseline justify-between px-1">
+            <h2 id="category-posts-heading" className="section-title">
+              {filter ? `Posts in ${filter}` : "Latest"}
+            </h2>
+            {!loading && !loadError && <span className="muted">{total} {total === 1 ? "post" : "posts"}</span>}
+          </div>
+          {loading ? <p role="status" className="muted px-1 py-6">Loading posts…</p> : loadError ? (
+            <p role="alert" className="px-1 text-brand">{loadError} <button onClick={refresh} className="underline">Retry</button></p>
+          ) : posts.length === 0 ? (
+            <div className="card px-6 py-12 text-center">
+              <p className="font-semibold">{filter ? `Nothing in ${filter} yet` : "Nothing here yet"}</p>
+              <p className="muted mt-1">Start the conversation. Your post shows up here right away.</p>
+              <button type="button" onClick={() => setEditor("new")} className="btn-primary mt-4">Write a post</button>
+            </div>
+          ) : (
+            <ul className="card divide-y divide-gray-100 overflow-hidden">
+              {posts.map((post) => (
+                <li key={post.id}>
+                  <article className="flex gap-3 px-4 py-4 sm:px-5">
+                    <Avatar name={post.author_name} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm">
+                          <span className="font-bold">{post.author_name || "BU student"}</span>
+                          <time dateTime={post.created_at} title={new Date(post.created_at).toLocaleString()}
+                            className="ml-2 text-gray-500">{timeAgo(post.created_at)}</time>
+                        </p>
+                        {post.author_id === userId && (
+                          <button type="button" onClick={() => { setEditor(post); setNotice(""); }}
+                            className="ml-auto text-sm font-medium text-gray-500 hover:text-ink">Edit</button>
+                        )}
+                      </div>
+                      {post.tag && <p className="mt-1"><span className="tag">{post.tag}</span></p>}
+                      <h3 className="mt-2 break-words text-[17px] font-bold leading-snug">{post.title}</h3>
+                      <p className="mt-1 break-words whitespace-pre-wrap text-[15px] leading-relaxed text-gray-700">{post.body}</p>
+                      <PostComments postId={post.id} userId={userId} authorName={authorName} />
+                    </div>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!loading && total > pageSize && (
+            <div className="mt-4 flex items-center justify-between">
+              <button type="button" disabled={page === 0} onClick={() => changePage(page - 1)} className="btn-secondary">Newer</button>
+              <span className="muted">Page {page + 1} of {Math.ceil(total / pageSize)}</span>
+              <button type="button" disabled={(page + 1) * pageSize >= total} onClick={() => changePage(page + 1)}
+                className="btn-secondary">Older</button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Right column (big screens) */}
+      <aside className="hidden xl:block">
+        <div className="sticky top-6 space-y-4">
+          {filterPanel}
+          {filter ? <FollowButton category={slug} filter={filter} /> : (
+            <section className="card p-5">
+              <h2 className="section-title">Get notified</h2>
+              <p className="muted mt-1">Pick a filter, then follow it to get an email when someone posts there.</p>
+            </section>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -210,8 +278,16 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
       const query = post
         ? supabase.from("posts").update(values).eq("id", post.id).eq("author_id", userId).eq("category", slug)
         : supabase.from("posts").insert({ ...values, category: slug, author_name: authorName });
-      const { error: saveError } = await query.select("id").single();
+      const { data: saved, error: saveError } = await query.select("id").single();
       if (saveError) throw saveError;
+      if (!post) {
+        // New post: email people who follow a matching filter. Doesn't block posting.
+        void fetch("/api/notify-followers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: saved.id }),
+        }).catch(() => {});
+      }
       onSaved();
     } catch {
       setError("Could not save your post. Check your BU account and try again.");
@@ -219,14 +295,14 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
     }
   }
 
-  const inputClass = "mt-1 w-full rounded border px-3 py-2";
+  const inputClass = "input";
   const tagLabel = { academics: "Course / Major", sports: "Sport type", housing: "Neighborhood" }[slug];
 
   return (
-    <form onSubmit={save} className="rounded-lg border bg-white p-5">
+    <form onSubmit={save} className="card p-5 ring-2 ring-brand/20">
       <h3 className="mb-4 text-lg font-semibold">{post ? "Edit your post" : "Create a post"}</h3>
       <fieldset disabled={saving} className="space-y-4">
-        <label className="block">Title
+        <label className="block text-sm font-medium">Title
           <input name="title" required maxLength={200} defaultValue={post?.title} className={inputClass} />
         </label>
         {slug === "academics" ? (
@@ -234,14 +310,14 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
         ) : (
           <TagPicker slug={slug} label={tagLabel} initial={post?.tag ?? ""} inputClass={inputClass} />
         )}
-        <label className="block">Body
+        <label className="block text-sm font-medium">Body
           <textarea name="body" required rows={6} maxLength={20000} defaultValue={post?.body} className={inputClass} />
         </label>
         <div className="flex gap-3">
-          <button type="submit" className="rounded bg-red-700 px-4 py-2 text-white">
+          <button type="submit" className="btn-primary">
             {saving ? "Saving…" : post ? "Save changes" : "Publish post"}
           </button>
-          <button type="button" onClick={onCancel} className="rounded border px-4 py-2">Cancel</button>
+          <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
         </div>
       </fieldset>
       {error && <p role="alert" className="mt-3 text-red-700">{error}</p>}
@@ -249,7 +325,6 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
   );
 }
 
-const tagIcon: Record<CategorySlug, string> = { academics: "📚", sports: "🏅", housing: "📍" };
 
 // Sports and Housing: pick the sport / neighborhood from a fixed list, so the
 // filter buttons find the post. "Other" opens a box to type a new one.
@@ -267,7 +342,7 @@ function TagPicker({ slug, label, initial, inputClass }: {
 
   return (
     <div className="space-y-2">
-      <label className="block">{label}
+      <label className="block text-sm font-medium">{label}
         <select required value={choice} onChange={(event) => setChoice(event.target.value)}
           className={inputClass}>
           <option value="" disabled>Choose {slug === "sports" ? "a sport" : "a neighborhood"}</option>
@@ -299,7 +374,7 @@ function AcademicPicker({ initial, inputClass }: { initial: string; inputClass: 
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <label className="block">College
+      <label className="block text-sm font-medium">College
         <select required value={college}
           onChange={(event) => { setCollege(event.target.value); setMajor(""); }}
           className={inputClass}>
@@ -307,18 +382,71 @@ function AcademicPicker({ initial, inputClass }: { initial: string; inputClass: 
           {COLLEGES.map((c) => <option key={c.code} value={c.code}>{c.code}: {c.name}</option>)}
         </select>
       </label>
-      <label className="block">Major
+      <label className="block text-sm font-medium">Major
         <select required value={major} disabled={!college}
           onChange={(event) => setMajor(event.target.value)} className={inputClass}>
           <option value="" disabled>Choose a major</option>
           {majorsOf(college).map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </label>
-      <label className="block">Course (optional)
+      <label className="block text-sm font-medium">Course (optional)
         <input value={course} maxLength={20} placeholder="e.g. EC 101"
           onChange={(event) => setCourse(event.target.value.replaceAll("·", ""))} className={inputClass} />
       </label>
       <input type="hidden" name="tag" value={value} />
+    </div>
+  );
+}
+
+const notSetUp = "Following isn't set up yet (run the new database file).";
+
+// "Follow Soccer": get an email when a new post matches this filter.
+function FollowButton({ category, filter }: { category: CategorySlug; filter: string }) {
+  const supabase = useSupabase();
+  const [followId, setFollowId] = useState<number | null | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+    void supabase.from("follows").select("id").eq("category", category).eq("filter_value", filter)
+      .maybeSingle().then(({ data, error: loadError }) => {
+        if (ignore) return;
+        if (loadError) setError(notSetUp);
+        setFollowId(data?.id ?? null);
+      });
+    return () => { ignore = true; };
+  }, [supabase, category, filter]);
+
+  async function toggle() {
+    setBusy(true);
+    setError("");
+    if (followId) {
+      const { error: deleteError } = await supabase.from("follows").delete().eq("id", followId);
+      if (deleteError) setError("Could not unfollow.");
+      else setFollowId(null);
+    } else {
+      const { data, error: insertError } = await supabase.from("follows")
+        .insert({ category, filter_value: filter }).select("id").single();
+      if (insertError) setError("Could not follow.");
+      else setFollowId(data.id);
+    }
+    setBusy(false);
+  }
+
+  if (followId === undefined) return null;
+  return (
+    <div className="card space-y-2 p-5">
+      <button type="button" onClick={() => void toggle()} disabled={busy || error === notSetUp}
+        aria-pressed={Boolean(followId)}
+        className={`w-full ${followId ? "btn-secondary" : "btn-primary"}`}>
+        <Icon name="bell" className="h-4 w-4" />
+        {followId ? `Following ${filter}` : `Follow ${filter}`}
+      </button>
+      <p className="muted">
+        {followId ? "We'll email you when a new post matches. Manage in My settings." : "Get an email when a new post matches this filter."}
+      </p>
+      {error && <p role="alert" className="text-sm text-brand">{error}</p>}
     </div>
   );
 }

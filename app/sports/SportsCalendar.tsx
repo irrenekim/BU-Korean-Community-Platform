@@ -10,10 +10,10 @@ export default function SportsCalendar({ events }: { events?: EventInput[] }) {
   return (
     <section
       aria-labelledby="sports-calendar-heading"
-      className="mb-6 rounded-lg border bg-white p-3 sm:p-5"
+      className="card p-3 sm:p-5"
     >
-      <h2 id="sports-calendar-heading" className="mb-4 text-xl font-semibold">
-        Sports event calendar
+      <h2 id="sports-calendar-heading" className="section-title mb-4">
+        Calendar
       </h2>
       <div className="sports-calendar">
         <FullCalendar
