@@ -45,7 +45,7 @@ export default function SportsEventRoster({
   return (
     <div className="border-t pt-3">
       <button type="button" aria-expanded={open}
-        onClick={() => setOpen(!open)} className="rounded border px-3 py-2 text-sm">
+        onClick={() => setOpen(!open)} className="btn-secondary">
         {open ? "Hide participant list" : "View participant list"}
       </button>
       {open && (

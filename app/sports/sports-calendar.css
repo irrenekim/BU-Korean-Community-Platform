@@ -1,12 +1,26 @@
 .sports-calendar {
-  --fc-button-bg-color: #b91c1c;
-  --fc-button-border-color: #b91c1c;
-  --fc-button-hover-bg-color: #991b1b;
-  --fc-button-hover-border-color: #991b1b;
-  --fc-button-active-bg-color: #7f1d1d;
-  --fc-button-active-border-color: #7f1d1d;
-  --fc-today-bg-color: #fef2f2;
+  /* Calendar colors follow the site theme and dark mode */
+  --fc-page-bg-color: var(--color-white);
+  --fc-neutral-bg-color: var(--color-gray-50);
+  --fc-button-bg-color: var(--color-white);
+  --fc-button-text-color: var(--color-gray-700);
+  --fc-button-border-color: var(--color-gray-300);
+  --fc-button-hover-bg-color: var(--color-gray-50);
+  --fc-button-hover-border-color: var(--color-gray-400);
+  --fc-button-active-bg-color: var(--color-brand);
+  --fc-button-active-border-color: var(--color-brand);
+  --fc-today-bg-color: var(--color-brand-soft);
+  --fc-border-color: var(--color-gray-200);
+  --fc-event-bg-color: var(--color-brand);
+  --fc-event-border-color: var(--color-brand);
+  color: var(--color-ink);
 }
+
+.sports-calendar .fc-toolbar-title { font-size: 1.25rem; font-weight: 600; }
+.sports-calendar .fc-button { font-size: 0.85rem; text-transform: capitalize; box-shadow: none !important; }
+.sports-calendar .fc-button-active { color: var(--color-on-brand) !important; }
+.sports-calendar .fc-daygrid-dot-event .fc-event-title { color: var(--color-ink); }
+.sports-calendar .fc-col-header-cell-cushion { font-size: 0.8rem; color: var(--color-gray-500); font-weight: 500; }
 
 @media (max-width: 640px) {
   .sports-calendar .fc-header-toolbar {

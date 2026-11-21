@@ -46,13 +46,16 @@ export default function SportsEventForm({ onCreated }: { onCreated: () => void }
     }
   }
 
-  const inputClass = "mt-1 w-full rounded border px-3 py-2";
+  const inputClass = "input";
 
   return (
-    <details className="rounded-lg border bg-white p-4">
-      <summary className="cursor-pointer font-semibold">Create event</summary>
+    <details className="group sm:ml-auto [&[open]]:ml-0 [&[open]]:basis-full [&[open]]:rounded-2xl [&[open]]:border [&[open]]:border-gray-200 [&[open]]:bg-white [&[open]]:p-5 [&[open]]:shadow-sm">
+      <summary className="btn-primary cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <span className="group-open:hidden">Create event</span>
+        <span className="hidden group-open:inline">Close</span>
+      </summary>
       <form onSubmit={createEvent}>
-        <fieldset disabled={saving} className="mt-4 grid gap-3 sm:grid-cols-2">
+        <fieldset disabled={saving} className="mt-4 grid gap-3 text-sm font-medium sm:grid-cols-2">
           <label>Title <input name="title" required maxLength={100} className={inputClass} /></label>
           <label>
             Sport
@@ -77,11 +80,11 @@ export default function SportsEventForm({ onCreated }: { onCreated: () => void }
             Description
             <textarea name="description" required maxLength={2000} rows={3} className={inputClass} />
           </label>
-          <button className="justify-self-start rounded bg-red-700 px-4 py-2 text-white" type="submit">
+          <button className="btn-primary justify-self-start" type="submit">
             {saving ? "Creating…" : "Create event"}
           </button>
         </fieldset>
-        {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+        {error && <p role="alert" className="mt-2 text-sm text-brand">{error}</p>}
       </form>
     </details>
   );
