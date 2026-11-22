@@ -7,6 +7,8 @@ import { describeFollow } from "@/lib/tagMatch";
 import type { CategorySlug } from "@/lib/categories";
 import { normalizePhone } from "@/lib/phone";
 import ThemePicker from "@/components/ThemePicker";
+import Icon from "@/components/icons";
+import Link from "next/link";
 
 type Follow = { id: number; category: CategorySlug; filter_value: string };
 
@@ -19,6 +21,14 @@ export default function SettingsPage() {
         <p className="mt-1 text-gray-600">How the site looks, your contact info and what you get notified about.</p>
       </div>
       <ThemePicker />
+      <Link href="/feedback?from=/settings" className="card flex items-center gap-3 p-5 transition hover:ring-gray-300">
+        <Icon name="feedback" className="h-6 w-6 text-brand" />
+        <span className="flex-1">
+          <span className="section-title block">Send feedback</span>
+          <span className="muted">Report something broken or suggest an idea.</span>
+        </span>
+        <span aria-hidden className="text-gray-400">›</span>
+      </Link>
       {!isLoaded ? <p role="status">Loading…</p> : !session ? (
         <SignInButton mode="modal">
           <button className="btn-primary">Log in to see your settings</button>

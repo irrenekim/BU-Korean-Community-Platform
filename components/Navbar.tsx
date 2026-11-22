@@ -35,6 +35,8 @@ function Logo() {
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  // Remember which page they were on, so the form can pre-pick it.
+  const feedbackHref = pathname.startsWith("/feedback") ? "/feedback" : `/feedback?from=${encodeURIComponent(pathname)}`;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[1260px]">
@@ -56,6 +58,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="mt-auto space-y-3">
+          <Link href={feedbackHref} aria-current={pathname.startsWith("/feedback") ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[15px] transition ${
+              pathname.startsWith("/feedback") ? "bg-white font-bold text-ink shadow-sm ring-1 ring-gray-200" : "font-medium text-gray-600 hover:bg-white/70 hover:text-ink"
+            }`}>
+            <Icon name="feedback" className={`h-[22px] w-[22px] ${pathname.startsWith("/feedback") ? "text-brand" : ""}`} />
+            Send feedback
+          </Link>
           <Show when="signed-out">
             <p className="text-sm text-gray-600">Join with your @bu.edu email to post, comment and RSVP.</p>
             <SignUpButton mode="modal"><button className="btn-primary w-full">Sign up</button></SignUpButton>
@@ -76,6 +85,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-paper/90 px-4 py-2.5 backdrop-blur lg:hidden">
           <Logo />
           <div className="flex items-center gap-2">
+            <Link href={feedbackHref} aria-label="Send feedback" title="Send feedback"
+              className={`grid h-9 w-9 place-items-center rounded-full ${pathname.startsWith("/feedback") ? "bg-white text-brand ring-1 ring-gray-200" : "text-gray-600 hover:bg-white"}`}>
+              <Icon name="feedback" className="h-[22px] w-[22px]" />
+            </Link>
             <Show when="signed-out">
               <SignInButton mode="modal"><button className="btn-primary px-3 py-1.5">Log in</button></SignInButton>
             </Show>
