@@ -1,7 +1,7 @@
 "use client";
 
 import { SignInButton, useSession } from "@clerk/nextjs";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent } from "react";
 import { useSupabase } from "@/lib/supabase/client";
 import type { CategorySlug } from "@/lib/categories";
 import CategoryFilters, { FILTERS, QuickChips } from "./CategoryFilters";
@@ -9,6 +9,9 @@ import Icon from "./icons";
 import { COLLEGES, SEP, majorsOf, parseAcademicTag } from "@/lib/academics";
 import PostComments from "./PostComments";
 import Avatar from "./Avatar";
+import PostImages from "./PostImages";
+import PostImagePicker, { type PendingImage } from "./PostImagePicker";
+import { IMAGE_BUCKET, MAX_IMAGE_BYTES, IMAGE_SIZE_ERROR } from "@/lib/post-images";
 import { timeAgo } from "@/lib/format";
 
 type Post = {
@@ -19,6 +22,7 @@ type Post = {
   body: string;
   tag: string | null;
   created_at: string;
+  image_paths: string[];
 };
 
 export default function CategoryPosts({ slug }: { slug: CategorySlug }) {
@@ -67,7 +71,7 @@ function SignedInPosts({ slug, userId, authorName }: {
 let query = supabase
   .from("posts")
   .select(
-    "id,author_id,author_name,title,body,tag,created_at",
+    "id,author_id,author_name,title,body,tag,created_at,image_paths",
     { count: "exact" }
   )
   .eq("category", slug);
@@ -216,6 +220,7 @@ const { data, count, error } = await query
                       {post.tag && <p className="mt-1"><span className="tag">{post.tag}</span></p>}
                       <h3 className="mt-2 break-words text-[17px] font-bold leading-snug">{post.title}</h3>
                       <p className="mt-1 break-words whitespace-pre-wrap text-[15px] leading-relaxed text-gray-700">{post.body}</p>
+                      <PostImages paths={post.image_paths} />
                       <PostComments postId={post.id} userId={userId} authorName={authorName} />
                     </div>
                   </article>
@@ -260,10 +265,15 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
 }) {
   const supabase = useSupabase();
   const [saving, setSaving] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [imagePaths, setImagePaths] = useState<string[]>(post?.image_paths ?? []);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const uploads = useRef(new Map<string, string>());
   const [error, setError] = useState("");
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving || processing) return;
     const fields = new FormData(event.currentTarget);
     const title = String(fields.get("title")).trim();
     const body = String(fields.get("body")).trim();
@@ -273,8 +283,25 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
     }
     setSaving(true);
     setError("");
-    const values = { title, body, tag: String(fields.get("tag")).trim() || null };
     try {
+      const uploaded: string[] = [];
+      for (const image of pendingImages) {
+        if (image.file.size > MAX_IMAGE_BYTES) throw new Error(IMAGE_SIZE_ERROR);
+        // Keep successful uploads for retry if a later upload or post save fails.
+        let uploadedPath = uploads.current.get(image.id);
+        if (!uploadedPath) {
+          const path = `${userId}/${crypto.randomUUID()}.${image.file.type === "image/webp" ? "webp" : "png"}`;
+          const { error: uploadError } = await supabase.storage.from(IMAGE_BUCKET).upload(path, image.file, {
+            contentType: image.file.type, upsert: false,
+          });
+          if (uploadError) throw new Error("사진 업로드에 실패했어요. 연결과 Storage 설정을 확인해 주세요.");
+          uploadedPath = path;
+          uploads.current.set(image.id, path);
+        }
+        uploaded.push(uploadedPath);
+      }
+      const values = { title, body, tag: String(fields.get("tag")).trim() || null,
+        image_paths: [...imagePaths, ...uploaded] };
       const query = post
         ? supabase.from("posts").update(values).eq("id", post.id).eq("author_id", userId).eq("category", slug)
         : supabase.from("posts").insert({ ...values, category: slug, author_name: authorName });
@@ -289,8 +316,8 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
         }).catch(() => {});
       }
       onSaved();
-    } catch {
-      setError("Could not save your post. Check your BU account and try again.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save your post. Check your BU account and try again.");
       setSaving(false);
     }
   }
@@ -301,7 +328,7 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
   return (
     <form onSubmit={save} className="card p-5 ring-2 ring-brand/20">
       <h3 className="mb-4 text-lg font-semibold">{post ? "Edit your post" : "Create a post"}</h3>
-      <fieldset disabled={saving} className="space-y-4">
+      <fieldset disabled={saving || processing} className="space-y-4">
         <label className="block text-sm font-medium">Title
           <input name="title" required maxLength={200} defaultValue={post?.title} className={inputClass} />
         </label>
@@ -313,6 +340,8 @@ function PostEditor({ slug, userId, authorName, post, onSaved, onCancel }: {
         <label className="block text-sm font-medium">Body
           <textarea name="body" required rows={6} maxLength={20000} defaultValue={post?.body} className={inputClass} />
         </label>
+        <PostImagePicker existing={imagePaths} pending={pendingImages} onExistingChange={setImagePaths}
+          onPendingChange={setPendingImages} busy={processing || saving} onBusyChange={setProcessing} />
         <div className="flex gap-3">
           <button type="submit" className="btn-primary">
             {saving ? "Saving…" : post ? "Save changes" : "Publish post"}
